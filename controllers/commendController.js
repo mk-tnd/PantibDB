@@ -1,37 +1,50 @@
-const { Commends } = require("../models");
+const { Commends, Posts, Users } = require("../models");
 
-exports.createCommends = async (req, res, next) => {
+exports.createCommend = async (req, res, next) => {
   try {
-    const { PostId } = req.params;
-    const { Text, PostsId } = req.body;
-    const posts = await Commends.create({
+    const { postId } = req.params;
+    const { text } = req.body;
+    console.log(text);
+    const commend = await Commends.create({
       Agree: 0,
-      Text,
-      PostsId: PostsId,
-      UserId: req.user.id,
-      CLikeId,
+      Text: text,
+      PostsId: postId,
+      UsersId: req.user.id,
     });
-    res.status(201).json({ posts });
+    const post = await Posts.findOne({ where: { id: postId } });
+    await Posts.update(
+      {
+        Commend: post.Commend + 1,
+      },
+      { where: { id: postId } }
+    );
+    res.status(201).json({ commend });
   } catch (err) {
     next(err);
   }
 };
 
-exports.like = async (req, res, next) => {
+exports.getAllCommend = async (req, res, next) => {
   try {
-    const { PostId } = req.params;
-    await Promotes.create({
-      PLikeId: PostId,
-      ULikeId: req.user.id,
-    });
-    const post = await Posts.findOne({ where: { id: PostId } });
-    await Posts.update(
-      {
-        Likes: post.Likes + 1,
+    const { postId } = req.params;
+    const commends = await Commends.findAll({
+      where: { PostsId: postId },
+      order: [["createdAt", "desc"]],
+      include: {
+        model: Users,
+        attributes: ["id", "FirstName", "LastName", "ProfileImg"],
       },
-      { where: { id: PostId } }
-    );
-    res.status(201).json({ message: "liked" });
+      attributes: [
+        "id",
+        "Agree",
+        "Text",
+        "createdAt",
+        "updatedAt",
+        "PostsId",
+        "UsersId",
+      ],
+    });
+    res.status(200).json({ commends });
   } catch (err) {
     next(err);
   }

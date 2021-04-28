@@ -15,7 +15,7 @@ exports.getAllPosts = async (req, res, next) => {
         "Details",
         "Recommend",
         "Likes",
-        "Commends",
+        "Commend",
         "createdAt",
         "updatedAt",
       ],
@@ -43,6 +43,36 @@ exports.getAllMyPosts = async (req, res, next) => {
         "Images",
         "Details",
         "Recommend",
+        "Commend",
+        "Likes",
+        "createdAt",
+        "updatedAt",
+      ],
+    });
+    res.status(200).json({ posts });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getPost = async (req, res, next) => {
+  try {
+    const { postId } = req.params;
+    const posts = await Posts.findOne({
+      where: {
+        id: postId,
+      },
+      include: {
+        model: Users,
+        attributes: ["id", "FirstName", "LastName", "ProfileImg"],
+      },
+      attributes: [
+        "id",
+        "TopicName",
+        "Images",
+        "Details",
+        "Recommend",
+        "Commend",
         "Likes",
         "createdAt",
         "updatedAt",
@@ -63,7 +93,7 @@ exports.createPost = async (req, res, next) => {
       Details,
       Recommend: 0,
       Likes: 0,
-      commends: 0,
+      Commend: 0,
       userId: req.user.id,
       UserId: req.user.id,
       ZoneId: zoneId,
