@@ -3,10 +3,11 @@ const { Posts, Users, Promotes } = require("../models");
 exports.like = async (req, res, next) => {
   try {
     const { PostId } = req.params;
-    await Promotes.create({
-      PLikeId: PostId,
-      ULikeId: req.user.id,
-    });
+    // await Promotes.create({
+    //   CLikeId: 0,
+    //   PLikeId: PostId,
+    //   ULikeId: req.user.id,
+    // });
     const post = await Posts.findOne({ where: { id: PostId } });
     await Posts.update(
       {
@@ -15,6 +16,27 @@ exports.like = async (req, res, next) => {
       { where: { id: PostId } }
     );
     res.status(201).json({ message: "liked" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.recommend = async (req, res, next) => {
+  try {
+    const { PostId } = req.params;
+    // await Promotes.create({
+    //   CLikeId: 0,
+    //   PLikeId: PostId,
+    //   ULikeId: req.user.id,
+    // });
+    const post = await Posts.findOne({ where: { id: PostId } });
+    await Posts.update(
+      {
+        Recommend: post.Recommend + 1,
+      },
+      { where: { id: PostId } }
+    );
+    res.status(201).json({ message: "Recommended" });
   } catch (err) {
     next(err);
   }

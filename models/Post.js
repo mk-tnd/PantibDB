@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
   Posts.associate = (models) => {
     Posts.belongsTo(models.Users, {
       foreignKey: {
-        name: "userId",
+        name: "UserId",
         allowNull: false,
       },
       onDelete: "RESTRICT",

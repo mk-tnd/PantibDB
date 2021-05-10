@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { Users } = require("../models");
+const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
 
 exports.protect = async (req, res, next) => {
   try {
@@ -25,13 +27,13 @@ exports.protect = async (req, res, next) => {
 };
 
 exports.me = (req, res, next) => {
-  const { id, FirstName, LastName, profileImg, Details, Email } = req.user;
+  const { id, FirstName, LastName, ProfileImg, Details, Email } = req.user;
   res.status(200).json({
     user: {
       id,
       FirstName,
       LastName,
-      profileImg,
+      ProfileImg,
       Details,
       Email,
     },
@@ -47,6 +49,7 @@ exports.register = async (req, res, next) => {
       FirstName,
       LastName,
       Email,
+      ProfileImg,
     } = req.body;
     if (Password !== ConfirmPassword)
       return res.status(400).json({ message: "password not match" });
@@ -54,17 +57,35 @@ exports.register = async (req, res, next) => {
       Password,
       +process.env.BCRYPT_SALT
     );
-    await Users.create({
-      FirstName,
-      LastName,
-      ProfileImg: null,
-      Details: null,
-      Username,
-      Password: hashedPassword,
-      Email,
-      Status: "User",
-    });
-    res.status(201).json({ message: "Register success" });
+    if (req.file) {
+      cloudinary.uploader.upload(req.file.path, async (err, result) => {
+        if (err) return next(err);
+        const user = await Users.create({
+          FirstName,
+          LastName,
+          ProfileImg: result.secure_url,
+          Details: null,
+          Username,
+          Password: hashedPassword,
+          Email,
+          Status: "User",
+        });
+        fs.unlinkSync(req.file.path);
+        res.status(200).json({ user });
+      });
+    } else {
+      const user = await Users.create({
+        FirstName,
+        LastName,
+        ProfileImg: null,
+        Details: null,
+        Username,
+        Password: hashedPassword,
+        Email,
+        Status: "User",
+      });
+      res.status(200).json({ user });
+    }
   } catch (err) {
     next(err);
   }
@@ -95,6 +116,35 @@ exports.login = async (req, res, next) => {
       expiresIn: +process.env.JWT_EXPIRES_IN,
     });
     res.status(200).json({ token });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateUser = async (req, res, next) => {
+  try {
+    const { FirstName, LastName, Email, Details } = req.body;
+    await Users.update(
+      { FirstName, LastName, Email, Details },
+      { where: { id: req.user.id } }
+    );
+    res.status(200).json({ message: "update user success" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateUserImg = async (req, res, next) => {
+  try {
+    cloudinary.uploader.upload(req.file.path, async (err, result) => {
+      if (err) return next(err);
+      await Users.update(
+        { ProfileImg: result.secure_url },
+        { where: { id: req.user.id } }
+      );
+      fs.unlinkSync(req.file.path);
+      res.status(200).json({ message: "update user success" });
+    });
   } catch (err) {
     next(err);
   }
